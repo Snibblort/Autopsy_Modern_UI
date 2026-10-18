@@ -7,6 +7,7 @@ import com.modernui.autopsy.ModernUISettings.Density;
 import com.modernui.autopsy.ModernUISettings.GridLines;
 import com.modernui.autopsy.ModernUISettings.TabStyle;
 import com.modernui.autopsy.ModernUISettings.Theme;
+import com.modernui.autopsy.theme.PalettePreset;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -56,6 +57,7 @@ final class ModernUIOptionsPanel extends JPanel {
 
     private final JCheckBox enabledChk = new JCheckBox("Use the modern look (FlatLaf)");
     private final JComboBox<Theme> themeCombo = new JComboBox<>(Theme.values());
+    private final JComboBox<PalettePreset> paletteCombo = new JComboBox<>(PalettePreset.values());
     private final JComboBox<Accent> accentCombo = new JComboBox<>(Accent.values());
     private final JComboBox<Corners> cornersCombo = new JComboBox<>(Corners.values());
     private final JComboBox<String> fontCombo = new JComboBox<>();
@@ -79,6 +81,7 @@ final class ModernUIOptionsPanel extends JPanel {
         fillFontCombos();
         accentCombo.setRenderer(new AccentRenderer());
         accentCombo.setMaximumRowCount(Accent.values().length);
+        paletteCombo.setMaximumRowCount(PalettePreset.values().length);
         fontSizeCombo.setRenderer(new FontSizeRenderer());
 
         buildLayout();
@@ -91,6 +94,7 @@ final class ModernUIOptionsPanel extends JPanel {
         };
         enabledChk.addActionListener(changed);
         themeCombo.addActionListener(changed);
+        paletteCombo.addActionListener(changed);
         cornersCombo.addActionListener(changed);
         fontCombo.addActionListener(changed);
         fontSizeCombo.addActionListener(changed);
@@ -137,13 +141,14 @@ final class ModernUIOptionsPanel extends JPanel {
         form.add(title, gc);
 
         gc.gridy++;
-        form.add(new JLabel("Restyles Autopsy with a flat light or dark theme. Changes apply after a restart."), gc);
+        form.add(new JLabel("Choose a shared application theme or a Modern UI palette profile."), gc);
 
         gc.gridy++;
         gc.insets = new Insets(10, 4, 4, 12);
         form.add(enabledChk, gc);
 
         addSection(form, gc, "Theme");
+        addRow(form, gc, "Design profile:", paletteCombo);
         addRow(form, gc, "Theme:", themeCombo);
         addRow(form, gc, "Accent color:", accentCombo);
         addRow(form, gc, "Corners:", cornersCombo);
@@ -251,7 +256,13 @@ final class ModernUIOptionsPanel extends JPanel {
     private void updateEnabledState() {
         boolean on = enabledChk.isSelected();
         Theme theme = (Theme) themeCombo.getSelectedItem();
+        PalettePreset palette = (PalettePreset) paletteCombo.getSelectedItem();
         themeCombo.setEnabled(on);
+        if (palette != null && palette != PalettePreset.NONE) {
+            themeCombo.setEnabled(false);
+            theme = palette.getBase();
+        }
+        paletteCombo.setEnabled(on);
         accentCombo.setEnabled(on);
         cornersCombo.setEnabled(on);
         fontCombo.setEnabled(on);
@@ -270,6 +281,7 @@ final class ModernUIOptionsPanel extends JPanel {
             ModernUISettings s = ModernUISettings.getInstance();
             enabledChk.setSelected(s.isEnabled());
             themeCombo.setSelectedItem(s.getTheme());
+            paletteCombo.setSelectedItem(s.getPalette());
             customAccent = s.getCustomAccent();
             accentCombo.setSelectedItem(s.getAccent());
             previousAccent = s.getAccent();
@@ -320,6 +332,7 @@ final class ModernUIOptionsPanel extends JPanel {
         ModernUISettings s = ModernUISettings.getInstance();
         s.setEnabled(enabledChk.isSelected());
         s.setTheme((Theme) themeCombo.getSelectedItem());
+        s.setPalette((PalettePreset) paletteCombo.getSelectedItem());
         s.setAccent((Accent) accentCombo.getSelectedItem());
         s.setCustomAccent(customAccent);
         s.setCorners((Corners) cornersCombo.getSelectedItem());
@@ -337,6 +350,7 @@ final class ModernUIOptionsPanel extends JPanel {
         ModernUISettings s = ModernUISettings.getInstance();
         return enabledChk.isSelected() != s.isEnabled()
                 || themeCombo.getSelectedItem() != s.getTheme()
+                || paletteCombo.getSelectedItem() != s.getPalette()
                 || accentCombo.getSelectedItem() != s.getAccent()
                 || (accentCombo.getSelectedItem() == Accent.CUSTOM && !customAccent.equalsIgnoreCase(s.getCustomAccent()))
                 || cornersCombo.getSelectedItem() != s.getCorners()

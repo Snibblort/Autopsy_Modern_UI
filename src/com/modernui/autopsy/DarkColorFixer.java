@@ -22,17 +22,12 @@ import javax.swing.plaf.UIResource;
 import javax.swing.text.JTextComponent;
 
 /**
- * Experimental: fixes Autopsy panels that hard-code light colors.
+ * Lots of Autopsy's Matisse-built panels hard-code white backgrounds and black
+ * text, which look terrible in a dark theme. This watches components as they're
+ * added and swaps near-white/near-black neutral grays for theme colors.
  *
- * Many Autopsy panels were built with the NetBeans GUI builder and set
- * explicit white backgrounds and black text. Under a dark theme those show up
- * as bright boxes. This watches components as they are added and swaps
- * near-white backgrounds for the theme's background, and near-black text on a
- * dark background for the theme's text color.
- *
- * It leaves alone: colors that came from the theme (UIResource), tinted colors
- * (status colors, highlights, red warnings), table/tree cell renderers, and
- * HTML viewers (JEditorPane), whose text colors come from the document.
+ * Skips UIResource colors, anything tinted (highlights, warnings), cell
+ * renderers, and JEditorPane (HTML sets its own colors).
  */
 final class DarkColorFixer implements AWTEventListener {
 
@@ -72,7 +67,7 @@ final class DarkColorFixer implements AWTEventListener {
         if (installed == null) {
             installed = new DarkColorFixer();
             Toolkit.getDefaultToolkit().addAWTEventListener(installed, AWTEvent.CONTAINER_EVENT_MASK);
-            LOGGER.info("Modern UI: dark color fixer installed.");
+            LOGGER.info("Dark color fixer installed.");
         }
         for (Window window : Window.getWindows()) {
             installed.fixTree(window);

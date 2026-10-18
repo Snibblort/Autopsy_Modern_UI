@@ -179,6 +179,67 @@ public final class ModernUISettings {
         }
     }
 
+    /** How much of the Cyber-Sigilism styling to show. */
+    public enum SigilPresentation {
+        FULL("Full cyber-sigilism"),
+        RESTRAINED("Restrained (professional)");
+
+        private final String displayName;
+
+        SigilPresentation(String displayName) {
+            this.displayName = displayName;
+        }
+
+        @Override
+        public String toString() {
+            return displayName;
+        }
+    }
+
+    /** How much ornament the Cyber-Sigilism surfaces draw. */
+    public enum SigilDetail {
+        LOW("Low: frames only"),
+        MEDIUM("Medium: frames, corners, dividers"),
+        HIGH("High: everything, incl. rose windows");
+
+        private final String displayName;
+
+        SigilDetail(String displayName) {
+            this.displayName = displayName;
+        }
+
+        @Override
+        public String toString() {
+            return displayName;
+        }
+    }
+
+    /** Display typeface for Cyber-Sigilism headings. Fonts ship inside the module. */
+    public enum SigilFont {
+        PIRATA("Pirata One (gothic display)", "PirataOne-Regular.ttf"),
+        BLACKLETTER("UnifrakturCook (blackletter)", "UnifrakturCook-Bold.ttf"),
+        CINZEL("Cinzel (engraved serif)", "Cinzel.ttf"),
+        NONE("Interface font", null);
+
+        private final String displayName;
+        private final String resource;
+
+        SigilFont(String displayName, String resource) {
+            this.displayName = displayName;
+            this.resource = resource;
+        }
+
+        /** Font file under com/modernui/autopsy/sigil/fonts, or null for the UI font. */
+        public String getResource() {
+            return resource;
+        }
+
+        @Override
+        public String toString() {
+            return displayName;
+        }
+    }
+
     public static final int MIN_FONT_DELTA = -2;
     public static final int MAX_FONT_DELTA = 4;
 
@@ -339,18 +400,18 @@ public final class ModernUISettings {
         nb.putBoolean(NB_MENU_BAR_EMBEDDED, modern);
     }
 
-    // ---- Studio settings (v2) ----
 
     private static final String KEY_PALETTE = "palettePreset";
     private static final String KEY_ICON_ONLY = "toolbarIconOnly";
     private static final String KEY_ICON_SIZE = "toolbarIconSize";
+    private static final String KEY_MODERN_ICONS = "modernToolbarIcons";
     private static final String KEY_WORKSPACES = "workspaces";
     private static final String KEY_NAV_MAX = "navigatorMaxResults";
 
-    /** Community color palette, or NONE to use the plain theme. */
+    /** Color palette, or NONE to use the plain theme. Cyber-Sigilism unless changed. */
     public com.modernui.autopsy.theme.PalettePreset getPalette() {
         return readEnum(KEY_PALETTE, com.modernui.autopsy.theme.PalettePreset.class,
-                com.modernui.autopsy.theme.PalettePreset.NONE);
+                com.modernui.autopsy.theme.PalettePreset.GOTHIC_SIGILISM);
     }
 
     public void setPalette(com.modernui.autopsy.theme.PalettePreset palette) {
@@ -365,7 +426,7 @@ public final class ModernUISettings {
 
     /** Toolbar buttons show only their icon (text moves to the tooltip). */
     public boolean isToolbarIconOnly() {
-        return prefs.getBoolean(KEY_ICON_ONLY, false);
+        return prefs.getBoolean(KEY_ICON_ONLY, true);
     }
 
     public void setToolbarIconOnly(boolean iconOnly) {
@@ -380,6 +441,15 @@ public final class ModernUISettings {
 
     public void setToolbarIconSize(int size) {
         prefs.putInt(KEY_ICON_SIZE, size == 16 || size == 24 ? size : 0);
+    }
+
+    /** Use the Modern UI line-icon set for recognized application toolbar actions. */
+    public boolean isModernToolbarIcons() {
+        return prefs.getBoolean(KEY_MODERN_ICONS, true);
+    }
+
+    public void setModernToolbarIcons(boolean modern) {
+        prefs.putBoolean(KEY_MODERN_ICONS, modern);
     }
 
     private static final String KEY_MERGE_TREE = "mergeAutopsyTree";
@@ -420,6 +490,76 @@ public final class ModernUISettings {
 
     public void setNavigatorMaxResults(int max) {
         prefs.putInt(KEY_NAV_MAX, Math.max(100, max));
+    }
+
+    private static final String KEY_SIGIL_PRESENTATION = "sigilPresentation";
+    private static final String KEY_SIGIL_GLOW = "sigilGlow";
+    private static final String KEY_SIGIL_DETAIL = "sigilDetail";
+    private static final String KEY_SIGIL_ANIMATION = "sigilAnimation";
+    private static final String KEY_SIGIL_FONT = "sigilFont";
+    private static final String KEY_SIGIL_PRIMARY = "sigilPrimary";
+    private static final String KEY_SIGIL_SECONDARY = "sigilSecondary";
+    public static final String DEFAULT_SIGIL_PRIMARY = "#A855F7";
+    public static final String DEFAULT_SIGIL_SECONDARY = "#56D8E8";
+
+    public SigilPresentation getSigilPresentation() {
+        return readEnum(KEY_SIGIL_PRESENTATION, SigilPresentation.class, SigilPresentation.FULL);
+    }
+
+    public void setSigilPresentation(SigilPresentation value) {
+        prefs.put(KEY_SIGIL_PRESENTATION, (value == null ? SigilPresentation.FULL : value).name());
+    }
+
+    /** Glow strength, 0 (none) to 100. */
+    public int getSigilGlow() {
+        return Math.max(0, Math.min(100, prefs.getInt(KEY_SIGIL_GLOW, 65)));
+    }
+
+    public void setSigilGlow(int glow) {
+        prefs.putInt(KEY_SIGIL_GLOW, Math.max(0, Math.min(100, glow)));
+    }
+
+    public SigilDetail getSigilDetail() {
+        return readEnum(KEY_SIGIL_DETAIL, SigilDetail.class, SigilDetail.HIGH);
+    }
+
+    public void setSigilDetail(SigilDetail value) {
+        prefs.put(KEY_SIGIL_DETAIL, (value == null ? SigilDetail.HIGH : value).name());
+    }
+
+    /** False means reduced motion: nothing animates. */
+    public boolean isSigilAnimation() {
+        return prefs.getBoolean(KEY_SIGIL_ANIMATION, true);
+    }
+
+    public void setSigilAnimation(boolean animate) {
+        prefs.putBoolean(KEY_SIGIL_ANIMATION, animate);
+    }
+
+    public SigilFont getSigilFont() {
+        return readEnum(KEY_SIGIL_FONT, SigilFont.class, SigilFont.PIRATA);
+    }
+
+    public void setSigilFont(SigilFont font) {
+        prefs.put(KEY_SIGIL_FONT, (font == null ? SigilFont.PIRATA : font).name());
+    }
+
+    public String getSigilPrimary() {
+        String hex = prefs.get(KEY_SIGIL_PRIMARY, DEFAULT_SIGIL_PRIMARY);
+        return isHexColor(hex) ? hex.toUpperCase() : DEFAULT_SIGIL_PRIMARY;
+    }
+
+    public void setSigilPrimary(String hex) {
+        prefs.put(KEY_SIGIL_PRIMARY, isHexColor(hex) ? hex.toUpperCase() : DEFAULT_SIGIL_PRIMARY);
+    }
+
+    public String getSigilSecondary() {
+        String hex = prefs.get(KEY_SIGIL_SECONDARY, DEFAULT_SIGIL_SECONDARY);
+        return isHexColor(hex) ? hex.toUpperCase() : DEFAULT_SIGIL_SECONDARY;
+    }
+
+    public void setSigilSecondary(String hex) {
+        prefs.put(KEY_SIGIL_SECONDARY, isHexColor(hex) ? hex.toUpperCase() : DEFAULT_SIGIL_SECONDARY);
     }
 
     /** Clears every Modern UI setting back to its default. */

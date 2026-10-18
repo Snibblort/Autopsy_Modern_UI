@@ -5,6 +5,7 @@ import com.modernui.autopsy.navigator.NavigatorConfig.Group;
 import com.modernui.autopsy.navigator.NavigatorConfig.View;
 import com.modernui.autopsy.studio.StudioDialog;
 import com.modernui.autopsy.studio.StudioUi;
+import com.modernui.autopsy.ui.ModernIcons;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -30,6 +31,7 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
+import javax.swing.JTabbedPane;
 import javax.swing.JTree;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
@@ -51,11 +53,7 @@ import org.sleuthkit.autopsy.casemodule.Case;
 import org.sleuthkit.autopsy.casemodule.NoCurrentCaseException;
 import org.sleuthkit.autopsy.ingest.IngestManager;
 
-/**
- * The Studio Navigator: a left-side tree of the views you define in the
- * Studio, each with a live count. Clicking a view opens its results in
- * Autopsy's result viewer. It sits alongside Autopsy's own tree.
- */
+/** Side panel with Autopsy's case tree and the user's saved views (each with a live count). */
 @TopComponent.Description(preferredID = NavigatorTopComponent.ID,
         persistenceType = TopComponent.PERSISTENCE_ALWAYS)
 @TopComponent.Registration(mode = "modernuiNavigator", openAtStartup = true)
@@ -64,8 +62,9 @@ import org.sleuthkit.autopsy.ingest.IngestManager;
 @TopComponent.OpenActionRegistration(displayName = "Studio Navigator", preferredID = NavigatorTopComponent.ID)
 public final class NavigatorTopComponent extends TopComponent {
 
-    static final String ID = "ModernUINavigatorTopComponent";
+    public static final String ID = "ModernUINavigatorTopComponent";
 
+    private static final String DOCK_MODE = "modernuiNavigator";
     private static final Logger LOGGER = Logger.getLogger(NavigatorTopComponent.class.getName());
     private static final RequestProcessor RP = new RequestProcessor("Modern UI navigator", 1, true);
     private static final String CARD_TREE = "tree";
@@ -78,7 +77,9 @@ public final class NavigatorTopComponent extends TopComponent {
     private final JLabel caseLabel = new JLabel(" ");
     private final JLabel emptyLabel = new JLabel("Open a case to use the navigator.", SwingConstants.CENTER);
     private final JPanel viewsPanel = new JPanel(new BorderLayout());
-    private final javax.swing.JSplitPane split = new javax.swing.JSplitPane(javax.swing.JSplitPane.VERTICAL_SPLIT);
+    private final JPanel caseTreeTab = new JPanel(new BorderLayout());
+    private final JPanel savedViewsTab = new JPanel(new BorderLayout());
+    private final JTabbedPane sections = new JTabbedPane();
     private AutopsyTreeSection caseTree;
     private final CardLayout cards = new CardLayout();
     private final JPanel body = new JPanel(cards);
@@ -87,6 +88,7 @@ public final class NavigatorTopComponent extends TopComponent {
 
     private NavigatorConfig config = NavigatorConfig.load();
     private RequestProcessor.Task countTask;
+    private final Map<Group, String> groupCounts = new IdentityHashMap<>();
 
     private final PropertyChangeListener caseListener = evt -> SwingUtilities.invokeLater(() -> {
         refreshTimer.restart();
@@ -108,8 +110,7 @@ public final class NavigatorTopComponent extends TopComponent {
         setLayout(new BorderLayout());
         refreshTimer.setRepeats(false);
 
-        JLabel title = new JLabel("Navigator");
-        title.setFont(title.getFont().deriveFont(Font.BOLD, title.getFont().getSize2D() + 1f));
+        JLabel title = new com.modernui.autopsy.sigil.SigilWidgets.Title("Navigator", 22f, 1f);
         caseLabel.setForeground(StudioUi.muted());
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 2, 0));
@@ -148,6 +149,7 @@ public final class NavigatorTopComponent extends TopComponent {
         header.setBorder(BorderFactory.createEmptyBorder(8, 8, 4, 8));
         header.add(titleRow, BorderLayout.NORTH);
         header.add(caseLabel, BorderLayout.CENTER);
+        header.add(new com.modernui.autopsy.sigil.SigilWidgets.Divider(), BorderLayout.SOUTH);
 
         tree.setRootVisible(false);
         tree.setShowsRootHandles(true);
@@ -197,14 +199,16 @@ public final class NavigatorTopComponent extends TopComponent {
         viewsPanel.add(viewsHeader, BorderLayout.NORTH);
         viewsPanel.add(body, BorderLayout.CENTER);
 
-        split.setBorder(BorderFactory.createEmptyBorder());
-        split.setResizeWeight(0.5);
-        split.setContinuousLayout(true);
-        split.setDividerSize(6);
-        split.setBottomComponent(viewsPanel);
+        caseTreeTab.setOpaque(false);
+        savedViewsTab.setOpaque(false);
+        savedViewsTab.add(viewsPanel, BorderLayout.CENTER);
+        sections.putClientProperty("JTabbedPane.tabType", "underlined");
+        sections.setBorder(BorderFactory.createEmptyBorder());
+        sections.addTab("Case tree", caseTreeTab);
+        sections.addTab("Saved views", savedViewsTab);
 
         add(header, BorderLayout.NORTH);
-        add(viewsPanel, BorderLayout.CENTER);
+        add(sections, BorderLayout.CENTER);
         rebuildTree();
     }
 
@@ -216,32 +220,89 @@ public final class NavigatorTopComponent extends TopComponent {
         }
     }
 
+    /** Opens a saved view by group and name. Used by the Case Workspace shortcuts. */
+    public static boolean openSavedView(String groupName, String viewName) {
+        NavigatorTopComponent navigator = findNavigator();
+        if (navigator == null) {
+            return false;
+        }
+        for (Group group : NavigatorConfig.load().groups) {
+            if (!group.name.equals(groupName)) {
+                continue;
+            }
+            for (View view : group.views) {
+                if (view.name.equals(viewName)) {
+                    navigator.dockToNavigatorMode();
+                    navigator.open();
+                    navigator.requestActive();
+                    if (ModernUISettings.getInstance().isMergeAutopsyTree()) {
+                        navigator.sections.setSelectedComponent(navigator.savedViewsTab);
+                    }
+                    navigator.openView(group.name, view, false);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** Opens the Navigator in its joined side column rather than a sliding overlay. */
+    public static boolean openNavigator() {
+        NavigatorTopComponent navigator = findNavigator();
+        if (navigator == null) {
+            return false;
+        }
+        navigator.dockToNavigatorMode();
+        navigator.open();
+        navigator.requestActive();
+        return true;
+    }
+
+    private static NavigatorTopComponent findNavigator() {
+        TopComponent tc = WindowManager.getDefault().findTopComponent(ID);
+        return tc instanceof NavigatorTopComponent ? (NavigatorTopComponent) tc : null;
+    }
+
+    private void dockToNavigatorMode() {
+        Mode target = WindowManager.getDefault().findMode(DOCK_MODE);
+        if (target == null) {
+            LOGGER.warning("The joined Navigator docking mode is unavailable");
+            return;
+        }
+        if (WindowManager.getDefault().findMode(this) != target) {
+            target.dockInto(this);
+        }
+    }
+
     /**
-     * One column: Autopsy's case tree on top, your views below, and Autopsy's
-     * own tree panel tucked away. Otherwise just your views.
+     * One column: switch between Autopsy's case tree and your saved views.
+     * Otherwise show only saved views and leave Autopsy's tree in its own panel.
      */
     void applyMerge() {
         boolean merge = ModernUISettings.getInstance().isMergeAutopsyTree();
-        remove(viewsPanel);
-        remove(split);
         if (merge) {
             if (caseTree == null) {
                 try {
                     caseTree = new AutopsyTreeSection();
                 } catch (RuntimeException | LinkageError ex) {
-                    LOGGER.log(Level.WARNING, "Modern UI: could not show Autopsy's tree in the Navigator", ex);
+                    LOGGER.log(Level.WARNING, "Could not show Autopsy's tree in the Navigator", ex);
                 }
             }
         }
-        if (merge && caseTree != null) {
-            split.setTopComponent(caseTree);
-            split.setBottomComponent(viewsPanel);
-            add(split, BorderLayout.CENTER);
-            if (split.getDividerLocation() <= 0) {
-                SwingUtilities.invokeLater(() -> split.setDividerLocation(0.5));
+        boolean showCaseTree = merge && caseTree != null;
+        int caseTreeIndex = sections.indexOfComponent(caseTreeTab);
+        if (showCaseTree) {
+            caseTreeTab.removeAll();
+            caseTreeTab.add(caseTree, BorderLayout.CENTER);
+            if (caseTreeIndex < 0) {
+                sections.insertTab("Case tree", null, caseTreeTab, null, 0);
             }
+            sections.setSelectedComponent(caseTreeTab);
         } else {
-            add(viewsPanel, BorderLayout.CENTER);
+            if (caseTreeIndex >= 0) {
+                sections.removeTabAt(caseTreeIndex);
+            }
+            sections.setSelectedComponent(savedViewsTab);
         }
         revalidate();
         repaint();
@@ -251,6 +312,11 @@ public final class NavigatorTopComponent extends TopComponent {
     private static JButton toolButton(String text, String tip, Runnable action) {
         JButton b = StudioUi.button(text, action);
         b.setToolTipText(tip);
+        javax.swing.Icon icon = ModernIcons.forToolbarLabel(tip, 16);
+        if (icon != null) {
+            b.setIcon(icon);
+            b.setText("");
+        }
         b.putClientProperty("JButton.buttonType", "toolBarButton");
         b.setFocusable(false);
         return b;
@@ -258,7 +324,7 @@ public final class NavigatorTopComponent extends TopComponent {
 
     private JPopupMenu dockMenu() {
         JPopupMenu menu = new JPopupMenu();
-        addDock(menu, "Left side (own area)", "modernuiNavigator");
+        addDock(menu, "Left side (own area)", DOCK_MODE);
         addDock(menu, "Right side", "properties", "commonpalette");
         addDock(menu, "Bottom", "output");
         addDock(menu, "Floating window", "floatingLeftBottom");
@@ -286,6 +352,7 @@ public final class NavigatorTopComponent extends TopComponent {
 
     @Override
     protected void componentOpened() {
+        dockToNavigatorMode();
         Case.addEventTypeSubscriber(CASE_EVENTS, caseListener);
         IngestManager.getInstance().addIngestJobEventListener(INGEST_EVENTS, ingestListener);
         NavigatorConfig.addChangeListener(configListener);
@@ -334,6 +401,8 @@ public final class NavigatorTopComponent extends TopComponent {
     private void refreshCounts() {
         if (!Case.isCaseOpen()) {
             caseLabel.setText("No case open");
+            groupCounts.clear();
+            relayoutRows();
             cards.show(body, CARD_EMPTY);
             return;
         }
@@ -351,6 +420,7 @@ public final class NavigatorTopComponent extends TopComponent {
         }
         final NavigatorConfig snapshot = config;
         for (Group g : snapshot.groups) {
+            groupCounts.put(g, "…");
             for (View v : g.views) {
                 counts.put(v, "…");
             }
@@ -359,16 +429,21 @@ public final class NavigatorTopComponent extends TopComponent {
         countTask = RP.post(() -> {
             NumberFormat fmt = NumberFormat.getIntegerInstance();
             for (Group g : snapshot.groups) {
+                long groupTotal = 0;
+                boolean groupCountFailed = false;
                 for (View v : g.views) {
                     if (Thread.interrupted()) {
                         return;
                     }
                     String text;
                     try {
-                        text = fmt.format(NavigatorQuery.count(current, v));
+                        long itemCount = NavigatorQuery.count(current, v);
+                        groupTotal += itemCount;
+                        text = fmt.format(itemCount);
                     } catch (Exception ex) {
                         LOGGER.log(Level.FINE, "Count failed for view " + v.name, ex);
                         text = "error";
+                        groupCountFailed = true;
                     }
                     final String shown = text;
                     SwingUtilities.invokeLater(() -> {
@@ -376,6 +451,11 @@ public final class NavigatorTopComponent extends TopComponent {
                         relayoutRows();
                     });
                 }
+                final String groupTotalText = groupCountFailed ? "—" : fmt.format(groupTotal);
+                SwingUtilities.invokeLater(() -> {
+                    groupCounts.put(g, groupTotalText);
+                    relayoutRows();
+                });
             }
         });
     }
@@ -394,7 +474,8 @@ public final class NavigatorTopComponent extends TopComponent {
                 List<Object> items = NavigatorQuery.fetch(current, view, max);
                 boolean truncated = items.size() > max;
                 List<Object> shown = truncated ? items.subList(0, max) : items;
-                SwingUtilities.invokeLater(() -> ResultsOpener.open(groupName, view.name, shown, truncated, newTab));
+                SwingUtilities.invokeLater(() -> ResultsOpener.open(groupName, view.name,
+                        view.kind.toString(), view.param, shown, truncated, newTab));
             } catch (Exception ex) {
                 LOGGER.log(Level.WARNING, "Modern UI navigator: could not load " + view.name, ex);
                 SwingUtilities.invokeLater(() -> javax.swing.JOptionPane.showMessageDialog(this,
@@ -429,63 +510,61 @@ public final class NavigatorTopComponent extends TopComponent {
                 boolean leaf, int row, boolean hasFocus) {
             super.getTreeCellRendererComponent(t, value, sel, expanded, leaf, row, hasFocus);
             Object user = ((DefaultMutableTreeNode) value).getUserObject();
-            setIcon(null);
             setHorizontalTextPosition(SwingConstants.LEADING);
-            setIconTextGap(10);
+            setIconTextGap(8);
+            String mutedColor = colorHex(sel ? getForeground() : StudioUi.muted());
             if (user instanceof Group) {
                 setFont(t.getFont().deriveFont(Font.BOLD));
-                setText(((Group) user).name);
+                Group group = (Group) user;
+                String total = groupCounts.get(group);
+                String totalLabel = total == null ? "" : "&nbsp;&nbsp;<font color='"
+                        + mutedColor + "'>" + escapeHtml(total) + "</font>";
+                setText("<html>" + escapeHtml(group.name) + totalLabel + "</html>");
+                setToolTipText("Total matching items across this group's saved searches");
+                setIcon(expanded ? getOpenIcon() : getClosedIcon());
             } else if (user instanceof View) {
                 View v = (View) user;
                 setFont(t.getFont());
-                setText(v.name);
                 String count = counts.get(v);
-                if (count != null) {
-                    setIcon(new CountIcon(count, getFont(), sel ? getForeground() : StudioUi.muted()));
-                }
+                String countLabel = count == null ? "" : "&nbsp;&nbsp;<font color='"
+                        + mutedColor + "'>" + escapeHtml(count) + "</font>";
+                setText("<html>" + escapeHtml(v.name) + countLabel + "</html>");
+                setToolTipText("Matching items");
+                setIcon(viewIcon(v));
             }
             return this;
         }
     }
 
-    /** Draws the count text; as an icon it is included in the row's measured width. */
-    private static final class CountIcon implements javax.swing.Icon {
-
-        private final String text;
-        private final Font font;
-        private final Color color;
-        private final java.awt.FontMetrics metrics;
-
-        CountIcon(String text, Font font, Color color) {
-            this.text = text;
-            this.font = font;
-            this.color = color;
-            this.metrics = new java.awt.Canvas().getFontMetrics(font);
+    private static javax.swing.Icon viewIcon(View view) {
+        switch (view.kind) {
+            case EXTENSIONS:
+            case MIME:
+                return ModernIcons.forToolbarLabel("images", 16);
+            case ARTIFACTS:
+                return ModernIcons.forToolbarLabel("discovery", 16);
+            case TAGS:
+                return ModernIcons.forToolbarLabel("keyword list", 16);
+            case MODIFIED_DAYS:
+                return ModernIcons.forToolbarLabel("timeline", 16);
+            case LARGER_THAN_MB:
+                return ModernIcons.forToolbarLabel("data source", 16);
+            case DELETED:
+                return ModernIcons.forToolbarLabel("close case", 16);
+            case SQL:
+                return ModernIcons.forToolbarLabel("keyword search", 16);
+            default:
+                return null;
         }
+    }
 
-        @Override
-        public void paintIcon(Component c, java.awt.Graphics g, int x, int y) {
-            java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
-            try {
-                g2.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING,
-                        java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-                g2.setFont(font);
-                g2.setColor(color);
-                g2.drawString(text, x, y + metrics.getAscent());
-            } finally {
-                g2.dispose();
-            }
-        }
+    private static String escapeHtml(String value) {
+        return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                .replace("\"", "&quot;").replace("'", "&#39;");
+    }
 
-        @Override
-        public int getIconWidth() {
-            return metrics.stringWidth(text);
-        }
-
-        @Override
-        public int getIconHeight() {
-            return metrics.getHeight();
-        }
+    private static String colorHex(Color color) {
+        return String.format("#%02X%02X%02X", color.getRed(), color.getGreen(), color.getBlue());
     }
 
 }

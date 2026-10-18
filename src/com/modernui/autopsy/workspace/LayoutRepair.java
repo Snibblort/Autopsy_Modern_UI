@@ -11,15 +11,11 @@ import org.openide.filesystems.FileUtil;
 import org.openide.util.NbPreferences;
 
 /**
- * One-time repair for window layouts saved while Modern UI 2.0 was installed.
- *
- * <p>2.0 docked the Navigator with a rule that made NetBeans rebuild the
- * whole window (squeezed result viewer, empty strips, stretched content
- * viewer), and NetBeans saved that arrangement. A saved layout always wins
- * over a plugin's defaults, so the fixed placement in 2.0.1 never took
- * effect. This runs before the window system loads, recognizes that exact
- * broken layout, moves it to config/ModernUI/layout-backup, and lets
- * Autopsy start with its normal default layout.
+ * 2.0 shipped a navigator mode constraint that scrambled the main window, and
+ * NetBeans persisted the result in Windows2Local, which overrides our layer
+ * defaults. If that exact layout is on disk, move it to
+ * config/ModernUI/layout-backup so Autopsy falls back to its default layout.
+ * Runs once.
  */
 public final class LayoutRepair {
 
@@ -46,12 +42,12 @@ public final class LayoutRepair {
                 FileObject layout = FileUtil.getConfigFile(LAYOUT);
                 if (layout != null) {
                     backupAndClear(layout);
-                    LOGGER.info("Modern UI: reset the window layout saved by 2.0 (backup in config/" + BACKUP + ").");
+                    LOGGER.info("Reset the window layout saved by 2.0 (backup in config/" + BACKUP + ").");
                 }
             }
             prefs.putBoolean(DONE_KEY, true);
         } catch (IOException | RuntimeException ex) {
-            LOGGER.log(Level.WARNING, "Modern UI: could not repair the window layout; use Reset window layout in the Studio.", ex);
+            LOGGER.log(Level.WARNING, "Could not repair the window layout; use Reset window layout in the Studio.", ex);
         }
     }
 

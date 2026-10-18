@@ -2,19 +2,19 @@ package com.modernui.autopsy.ui;
 
 import com.modernui.autopsy.ModernUISettings;
 import com.modernui.autopsy.studio.StudioUi;
+import com.modernui.autopsy.workspace.WorkspaceManager;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTree;
@@ -23,7 +23,6 @@ import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import org.netbeans.api.options.OptionsDisplayer;
-import org.openide.awt.Actions;
 
 /**
  * Studio tab: show, hide and reorder every toolbar button and menu item, and
@@ -37,6 +36,7 @@ public final class MenuToolbarEditorPanel extends JPanel {
     private final DefaultTreeModel treeModel = new DefaultTreeModel(root);
     private final JTree tree = new JTree(treeModel);
     private final JCheckBox iconOnly = new JCheckBox("Icon-only toolbar buttons (names move to tooltips)");
+    private final JCheckBox modernIcons = new JCheckBox("Modern line symbols for common toolbar actions");
     private final JCheckBox lockToolbars = new JCheckBox("Lock toolbars (hide the ⋮ drag handles)");
     private final JComboBox<String> iconSize = new JComboBox<>(ICON_SIZES);
     private final JButton toggle = new JButton("Hide");
@@ -49,17 +49,19 @@ public final class MenuToolbarEditorPanel extends JPanel {
         JPanel look = StudioUi.form();
         StudioUi.wide(look, StudioUi.section("Toolbar look"));
         StudioUi.wide(look, iconOnly);
+        StudioUi.wide(look, modernIcons);
         StudioUi.wide(look, lockToolbars);
         StudioUi.row(look, "Icon size:", iconSize);
         JPanel shortcuts = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
         shortcuts.add(StudioUi.button("Keyboard shortcuts…", () -> OptionsDisplayer.getDefault().open(OptionsDisplayer.KEYMAPS)));
-        shortcuts.add(StudioUi.button("Reset window layout", MenuToolbarEditorPanel::resetWindows));
+        shortcuts.add(StudioUi.button("Reset window layout", this::resetWindows));
         StudioUi.wide(look, shortcuts);
         StudioUi.wide(look, StudioUi.section("Toolbar buttons and menu items"));
         StudioUi.hint(look, "Select an item, then hide/show or move it. Changes apply immediately and can be reset.");
 
         ModernUISettings s = ModernUISettings.getInstance();
         iconOnly.setSelected(s.isToolbarIconOnly());
+        modernIcons.setSelected(s.isModernToolbarIcons());
         iconSize.setSelectedIndex(s.getToolbarIconSize() == 16 ? 1 : s.getToolbarIconSize() == 24 ? 2 : 0);
         lockToolbars.setSelected(s.isLockToolbars());
         lockToolbars.addActionListener(e -> {
@@ -68,6 +70,10 @@ public final class MenuToolbarEditorPanel extends JPanel {
         });
         iconOnly.addActionListener(e -> {
             s.setToolbarIconOnly(iconOnly.isSelected());
+            ToolbarCustomizer.apply();
+        });
+        modernIcons.addActionListener(e -> {
+            s.setModernToolbarIcons(modernIcons.isSelected());
             ToolbarCustomizer.apply();
         });
         iconSize.addActionListener(e -> {
@@ -108,10 +114,18 @@ public final class MenuToolbarEditorPanel extends JPanel {
         reload();
     }
 
-    private static void resetWindows() {
-        Action reset = Actions.forID("Window", "org.netbeans.core.windows.actions.ResetWindowsAction");
-        if (reset != null) {
-            reset.actionPerformed(new ActionEvent(MenuToolbarEditorPanel.class, ActionEvent.ACTION_PERFORMED, "reset"));
+    private void resetWindows() {
+        int answer = JOptionPane.showConfirmDialog(this,
+                "Switch to the Default workspace and restore Autopsy's default panel arrangement?\n"
+                + "Custom workspaces will be kept.",
+                "Restore default layout", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+        if (answer != JOptionPane.OK_OPTION) {
+            return;
+        }
+        if (WorkspaceManager.restoreDefaultLayout()) {
+            status.setText("Restored Autopsy's default panel arrangement.");
+        } else {
+            status.setText("Autopsy's window-layout reset action is unavailable.");
         }
     }
 

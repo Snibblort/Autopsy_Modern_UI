@@ -12,18 +12,12 @@ import org.openide.windows.WindowManager;
 import org.sleuthkit.autopsy.directorytree.DirectoryTreeTopComponent;
 
 /**
- * Keeps Autopsy's own tree panel out of sight while its tree is shown inside
- * the Navigator ("one column").
+ * Hides DirectoryTreeTopComponent while its tree is shown in the Navigator.
  *
- * <p>Autopsy's tree panel can't be closed (Autopsy disables closing it), and
- * closing it would stop parts of Autopsy that rely on it. Instead it is moved
- * into the Navigator's own docking area, behind the Navigator. Autopsy hides
- * panel tabs, so it is invisible there, and the old tree column disappears
- * because nothing is left in it.
- *
- * <p>Autopsy re-docks its tree into the left column every time a case opens,
- * and its "go to" actions bring the tree panel to the front. A light timer
- * and a visibility listener put things back each time.
+ * It can't be closed (Autopsy disables that, and other code expects it open),
+ * so we dock it behind the Navigator; view modes have no tabs in Autopsy, so
+ * it's invisible there. Autopsy re-docks it on every case open and raises it
+ * from "go to" actions, hence the timer and hierarchy listener.
  */
 final class TreeMerger {
 
@@ -78,7 +72,7 @@ final class TreeMerger {
                 navigator.requestVisible();
             }
         } catch (RuntimeException ex) {
-            LOGGER.log(Level.FINE, "Modern UI: could not tuck away Autopsy's tree", ex);
+            LOGGER.log(Level.FINE, "Could not tuck away Autopsy's tree", ex);
         }
     }
 
@@ -93,7 +87,7 @@ final class TreeMerger {
                 tree.requestVisible();
             }
         } catch (RuntimeException ex) {
-            LOGGER.log(Level.FINE, "Modern UI: could not restore Autopsy's tree", ex);
+            LOGGER.log(Level.FINE, "Could not restore Autopsy's tree", ex);
         }
     }
 
@@ -116,7 +110,7 @@ final class TreeMerger {
             });
             listening = true;
         } catch (RuntimeException | LinkageError ex) {
-            LOGGER.log(Level.FINE, "Modern UI: Autopsy's tree not available yet", ex);
+            LOGGER.log(Level.FINE, "Autopsy's tree not available yet", ex);
         }
     }
 }

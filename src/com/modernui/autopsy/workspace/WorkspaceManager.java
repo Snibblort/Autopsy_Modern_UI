@@ -7,7 +7,9 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import javax.swing.Action;
 import javax.swing.event.ChangeListener;
+import org.openide.awt.Actions;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.util.ChangeSupport;
@@ -75,6 +77,22 @@ public final class WorkspaceManager {
         CHANGES.fireChange();
     }
 
+    /**
+     * Switches to the default workspace and asks NetBeans to restore its default
+     * window arrangement. Returns false when the platform reset action is absent.
+     */
+    public static boolean restoreDefaultLayout() {
+        Action reset = Actions.forID("Window", "org.netbeans.core.windows.actions.ResetWindowsAction");
+        if (reset == null) {
+            return false;
+        }
+        WindowManager.getDefault().setRole(null);
+        reset.actionPerformed(new java.awt.event.ActionEvent(
+                WorkspaceManager.class, java.awt.event.ActionEvent.ACTION_PERFORMED, "reset"));
+        CHANGES.fireChange();
+        return true;
+    }
+
     /** Creates a workspace (starting from Autopsy's default layout) and switches to it. */
     public static void create(String name) {
         String clean = name.trim();
@@ -102,7 +120,7 @@ public final class WorkspaceManager {
             try {
                 layout.delete();
             } catch (IOException ex) {
-                LOGGER.log(Level.WARNING, "Modern UI: could not delete layout for workspace " + name, ex);
+                LOGGER.log(Level.WARNING, "Could not delete layout for workspace " + name, ex);
             }
         }
         CHANGES.fireChange();

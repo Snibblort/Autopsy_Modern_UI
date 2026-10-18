@@ -24,18 +24,14 @@ import java.util.Arrays;
 import java.util.List;
 import javax.swing.JTree;
 import javax.swing.SwingUtilities;
+import java.awt.event.HierarchyEvent;
 import javax.swing.tree.TreePath;
 import org.sleuthkit.autopsy.directorytree.DirectoryTreeTopComponent;
 
 /**
- * Autopsy's own case tree (Data Sources, File Views, Data Artifacts, Analysis
- * Results, OS Accounts, Tags, Score, Reports), shown inside the Navigator.
- *
- * <p>This is a second view of the same tree, not a copy. This panel hands its
- * BeanTreeView Autopsy's own ExplorerManager. Autopsy listens to that
- * manager for selections, so clicking a node here updates the result viewer
- * exactly as clicking it in Autopsy's tree does, and Autopsy's "go to" actions
- * select and expand nodes here too.
+ * Autopsy's case tree, shown inside the Navigator. The BeanTreeView here is
+ * bound to DirectoryTreeTopComponent's own ExplorerManager, so selection goes
+ * through Autopsy's normal listeners and its "go to" actions land here too.
  */
 final class AutopsyTreeSection extends JPanel implements ExplorerManager.Provider {
 
@@ -43,6 +39,7 @@ final class AutopsyTreeSection extends JPanel implements ExplorerManager.Provide
 
     private final ExplorerManager manager;
     private final BeanTreeView view = new BeanTreeView();
+    private final DirectoryTreeTopComponent autopsyTree;
 
     AutopsyTreeSection() {
         this(DirectoryTreeTopComponent.findInstance().getExplorerManager(), DirectoryTreeTopComponent.findInstance());
@@ -52,6 +49,7 @@ final class AutopsyTreeSection extends JPanel implements ExplorerManager.Provide
     AutopsyTreeSection(ExplorerManager manager, DirectoryTreeTopComponent autopsyTree) {
         super(new BorderLayout());
         this.manager = manager;
+        this.autopsyTree = autopsyTree;
 
         view.setRootVisible(false);
         view.setBorder(BorderFactory.createEmptyBorder());
@@ -82,34 +80,48 @@ final class AutopsyTreeSection extends JPanel implements ExplorerManager.Provide
         add(header, BorderLayout.NORTH);
         add(view, BorderLayout.CENTER);
         installSelectionSync();
+        view.addHierarchyListener(e -> {
+            if ((e.getChangeFlags() & HierarchyEvent.DISPLAYABILITY_CHANGED) != 0 && view.isDisplayable()) {
+                SwingUtilities.invokeLater(this::installSelectionSync);
+            }
+        });
     }
 
     /**
-     * NetBeans normally keeps a tree view and its ExplorerManager in sync
-     * once the view is on screen. This adds the same sync explicitly in both
-     * directions, so the Navigator's copy of the tree drives Autopsy (and
-     * follows Autopsy's own "go to" selections) regardless of timing. Each
-     * side only acts when the other differs, so the two never loop.
+     * TreeView only hooks up to its ExplorerManager once it is showing, and
+     * this one often isn't when selections happen (hidden tab, startup). Sync
+     * both ways by hand; each side bails if the other already matches.
      */
     private void installSelectionSync() {
         JTree tree = innerTree(view);
-        if (tree == null) {
+        if (tree == null || tree == syncedTree) {
             return;
         }
+        syncedTree = tree;
         tree.getSelectionModel().addTreeSelectionListener(e -> {
             if (syncing) {
                 return;
             }
             Node[] fromView = nodesFor(tree.getSelectionPaths());
-            if (fromView.length > 0 && !Arrays.equals(fromView, manager.getSelectedNodes())) {
+            if (fromView.length == 0) {
+                return;
+            }
+            if (!Arrays.equals(fromView, manager.getSelectedNodes())) {
                 syncing = true;
                 try {
                     manager.setSelectedNodes(fromView);
                 } catch (PropertyVetoException ex) {
                     LOGGER.log(Level.FINE, "Selection vetoed", ex);
+                    return;
                 } finally {
                     syncing = false;
                 }
+            }
+            if (autopsyTree != null) {
+                SwingUtilities.invokeLater(() -> {
+                    autopsyTree.openDirectoryListing();
+                    autopsyTree.setDirectoryListingActive();
+                });
             }
         });
         manager.addPropertyChangeListener(WeakListeners.propertyChange(managerListener = evt -> {
@@ -150,6 +162,7 @@ final class AutopsyTreeSection extends JPanel implements ExplorerManager.Provide
     }
 
     private boolean syncing;
+    private JTree syncedTree;
     private java.beans.PropertyChangeListener managerListener;
 
     private Node[] nodesFor(TreePath[] paths) {
@@ -197,11 +210,7 @@ final class AutopsyTreeSection extends JPanel implements ExplorerManager.Provide
         return manager;
     }
 
-    /**
-     * A button that clicks one of Autopsy's own (now hidden) tree buttons, so
-     * Back/Forward keep Autopsy's history logic. It mirrors the original's
-     * enabled state.
-     */
+    /** Stand-in for one of Autopsy's private tree buttons: forwards clicks, mirrors enabled state. */
     private static JButton proxy(DirectoryTreeTopComponent tree, String fieldName, String text, String tip) {
         JButton original = field(tree, fieldName, JButton.class);
         if (original == null) {

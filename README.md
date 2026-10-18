@@ -1,112 +1,115 @@
 # Autopsy Modern UI
 
-A NetBeans plugin that modernizes Autopsy and lets you customize nearly everything about how it looks and how it's organized. It's built on **FlatLaf**, which already ships with Autopsy's NetBeans platform (FlatLaf 2.4 in Autopsy 4.22.1), so nothing extra is bundled. Autopsy's own files are never modified: every change lives in your user settings and can be reset.
+A NetBeans module for [Autopsy](https://www.autopsy.com/) 4.22.1 that switches it to FlatLaf and lets you rearrange most of the UI: theme colors, toolbars, menus, window layouts, and a side panel of saved searches.
 
-## Where to find things
+FlatLaf 2.4 already ships with Autopsy's NetBeans platform, so nothing extra is bundled. The module doesn't touch Autopsy's install folder; everything it changes lives in your user config and can be reset.
 
-| What | Where |
+![Case Workspace in the Cyber-Sigilism theme](docs/screenshots/case-workspace.png)
+
+![Result table, tree and controls in Cyber-Sigilism](docs/screenshots/controls.png)
+
+| Cyber-Sigilism settings | Overview tab |
 |---|---|
-| Quick settings (theme, accent, font, rows, tabs) | **Tools → Options → Modern UI** |
-| **Modern UI Studio** (everything below) | **Tools → Modern UI Studio…**, **View → Modern UI Studio…**, or **Ctrl+Shift+U** |
-| Light/dark toggle | **View → Toggle Light/Dark Theme**, the Workspace toolbar, or **Ctrl+Shift+L** |
-| Workspace switcher | the **Workspace** toolbar, or **Window → Workspaces** |
-| Studio Navigator | opens on the left; reopen with **Window → Studio Navigator** |
+| ![Settings](docs/screenshots/cyber-sigilism-settings.png) | ![Overview](docs/screenshots/overview-tab.png) |
 
-## Modern UI Studio
+## Install
 
-### Theme
-- **12 palettes:** Dracula, Nord, One Dark, Solarized (dark and light), Gruvbox, Catppuccin Mocha, Monokai Pro, GitHub (dark and light), Material Ocean, and Forensic Navy. Each palette brings its own light or dark base.
-- **Override any UI property:** colors, sizes, arcs, fonts, row heights, scrollbars, tab underlines. "Add property…" lists everything the current theme defines, with live values and color swatches. `@` variables such as `@background` or `@accentColor` recolor everything derived from them.
-- **Import and export** themes as `.properties` files so you can share them.
-- **Apply now** (live) or **Save and restart** (the most reliable).
+The quickest way is to download `com-modernui-autopsy.nbm` from the [Releases](../../releases) page and skip to step 3. To build it yourself:
 
-### Toolbars & menus
-- **Hide, show and reorder** every toolbar button and menu item, including whole menus.
-- **Icon-only toolbar:** button names move into tooltips. **Icon size:** small or large.
-- **Lock toolbars:** hides the ⋮ drag handles. On by default.
-- **Reset this group** restores Autopsy's original toolbar or menu.
-- **Shortcuts and layout:** links to keyboard shortcuts, plus a **Reset window layout** button. Autopsy hides its own Reset Windows menu item.
+You need NetBeans with a platform named `Autopsy_4.22.1` pointing at your Autopsy install (Tools > NetBeans Platforms).
 
-Under the hood this edits the same configuration folders Autopsy's toolbars and menus are built from. It uses NetBeans' `_hidden` markers (the mechanism Autopsy itself uses) and writes only to your user config.
+1. Open this folder as a project.
+2. Right-click the project > Create NBM. The module ends up in `build/com-modernui-autopsy.nbm`.
+3. In Autopsy: Tools > Plugins > Downloaded > Add Plugins…, pick the .nbm, install.
+4. Close Autopsy completely and start it again. The theme is set before any window is created, so it only takes effect on a fresh start.
 
-### Workspaces
-Named window layouts, such as *Triage*, *Deep Dive* or *Reporting*. Switch to a workspace, then drag, resize, open or close panels, and the layout is saved automatically. These are built on NetBeans window "roles", and each one is stored in `config/Windows2Local-<name>`.
+## What's in it
 
-### Navigator
-**One column:** the top of the Navigator is Autopsy's own case tree (Data Sources, File Views, Data Artifacts, Analysis Results, OS Accounts, Tags, Score, Reports) with its Back, Forward and ⚙ buttons, and **My views** sits below it. It is the same tree, not a copy, so clicking a node updates the results exactly as before, and Autopsy's "go to" actions select nodes there. Autopsy's separate tree panel is tucked behind the Navigator: it can't be closed, and it has to stay open for Autopsy's features to work. Turn this off in Studio → Navigator to get Autopsy's tree column back.
+**Cyber-Sigilism** is the default theme and the one with the most work in it: black cathedral surfaces, ultraviolet light and engraved geometry. Settings are in Studio > Cyber-Sigilism.
 
-Your own way of organizing a case, alongside Autopsy's tree. **Groups** hold **views**, and each view is a saved search with a live count. Clicking a view opens its results in **Autopsy's own result viewer**, so tables, thumbnails, content viewers, tagging and right-click actions all work normally. Ctrl+click opens a view in a new tab.
+- Controls: buttons and tabs with clipped corners and lit edges, a violet progress gauge with notches, diamond check boxes, radio buttons and slider thumb, thorn sort arrows and chevron tree expanders, a primary-lit table header with diamond column joints, framed popup menus and tooltips, engraved group boxes. These are FlatLaf's own delegates with different painting, so keyboard handling, sizing and accessibility don't change.
+- Plugin surfaces: the Case Workspace becomes a row of pointed-arch windows (each with its own sigil) under a slowly turning rose window; the Navigator and Overview tab get display-type headings and engraved frames; the toolbar gets an Autopsy wordmark; the status bar gets a sigil that turns while ingest runs.
+- Settings: full or restrained presentation, ornament level, glow strength, animation on/off (reduced motion), display typeface (Pirata One, UnifrakturCook blackletter, Cinzel, or the UI font), density, and the primary and secondary light colors.
+- Display type is only used for headings. File names, paths, tables and metadata stay in the UI font.
+- Animation runs on one shared 20 fps timer, only while an animated element is on screen, and stops entirely when motion is off.
+
+**Options page** (Tools > Options > Modern UI): theme, accent color, font, corner radius, row height, striped rows, tab style.
+
+**Studio** (Tools > Modern UI Studio…, or Ctrl+Shift+U), with a Cyber-Sigilism tab (above) and these four:
+
+- **Theme.** Pick a palette (Dracula, Nord, One Dark, Solarized, Gruvbox, Catppuccin, Monokai Pro, GitHub, Material Ocean, Forensic Navy, Professional Forensics, Cyber-Sigilism) or override any FlatLaf UI property by hand. Themes import/export as `.properties` files.
+- **Toolbars & menus.** Hide, show and reorder any toolbar button or menu item. Icon-only buttons, small/large icons, optional replacement line icons for the common Autopsy commands. This uses the same `_hidden` mechanism Autopsy itself uses, and "Reset this group" undoes it.
+- **Workspaces.** Named window layouts (NetBeans window roles). Switch to one, arrange panels, and it's saved.
+- **Navigator.** Edit the saved views shown in the Navigator panel.
+
+**Navigator** (left side, Window > Studio Navigator). Two tabs:
+
+- *Case tree* is Autopsy's own directory tree, moved here so there's one left column instead of two. It's the same tree (same ExplorerManager), so selection, Back/Forward and Autopsy's "go to" actions work as normal. You can turn this off in Studio > Navigator.
+- *Saved views* is a tree of your own searches, each with a count. Clicking one opens the results in Autopsy's normal result viewer, so tagging, content viewers and context menus all work. Ctrl+click opens a new tab. Comes with 34 starter views.
 
 | View type | Parameter |
 |---|---|
 | File extensions | `jpg, png, heic` |
 | MIME type | `image/%` |
-| Artifact types | `TSK_WEB_HISTORY, TSK_WEB_DOWNLOAD` (or use the picker) |
-| Tagged items | a tag name, or `*` |
+| Artifact types | `TSK_WEB_HISTORY, TSK_WEB_DOWNLOAD` |
+| Tagged items | tag name, or `*` |
 | Modified recently | days |
 | Large files | MB |
-| Deleted files | none |
-| Custom SQL filter | a WHERE clause on `tsk_files`, e.g. `name LIKE '%invoice%'` |
+| Deleted files | - |
+| Custom SQL | a `WHERE` clause on `tsk_files` |
 
-- **Starter layout:** 34 triage views across Media, Documents, Suspicious, User activity, Communication, Location and Review.
-- **Test on open case:** checks a view's count before you save it.
-- **Sharing:** import and export navigator layouts.
-- **Read-only:** every query only reads the case database. Extension and MIME filters are escaped, so input can't change the query.
-- **Moving the panel:** use the ⋮ button (left, right, bottom or floating).
+All queries are read-only. Extension and MIME input is escaped.
 
-## How the theme is applied
+**Case Workspace** (Window > Case Workspace) is a start page in the editor area with the open case's name and a few shortcuts into the saved views.
 
-1. **Before NetBeans picks its theme:** NetBeans calls each plugin's `validate()` first. `Installer` sets the value `--laf` would set (the FlatLaf class for your theme) and registers your overrides with `FlatLaf.setGlobalExtraDefaults`.
-2. **NetBeans starts in FlatLaf:** it installs its own FlatLaf window styling (module `org.netbeans.swing.laf.flatlaf`), so no window is ever built in the Windows look.
-3. **After startup:** `restored()` confirms the theme, starts the dark-mode color fixer and applies the toolbar settings.
-4. **Override order:** palette → Options settings → Studio overrides, so later layers win.
-5. **Fallback:** if a future Autopsy version blocks the startup hook, the theme is switched after startup instead. Table headers left with old-theme renderers are rebuilt, because they would otherwise crash while painting and leave the window blank.
+**Light/dark toggle**: View menu, the Workspace toolbar, or Ctrl+Shift+L.
 
-## Build and install
+## How the theme gets applied
 
-1. In NetBeans, go to **Tools → NetBeans Platforms**. A platform named exactly `Autopsy_4.22.1` must point at `C:\Program Files\Autopsy-4.22.1`.
-2. **File → Open Project** → this folder.
-3. Right-click the project → **Clean and Build**, then **Create NBM**. The plugin is written to `build\com-modernui-autopsy.nbm`.
-4. In Autopsy: **Tools → Plugins → Downloaded → Add Plugins…**, then install. It is version 2.0, so it replaces 1.x.
-5. **Fully close and reopen Autopsy** after installing.
+NetBeans picks its look and feel once, from `--laf`, after every module's `ModuleInstall.validate()` and before it builds any windows. `Installer.validate()` sets that same value by reflection (`CLIOptions.uiClassName`) and registers the overrides with `FlatLaf.setGlobalExtraDefaults`, so Autopsy starts in FlatLaf with NetBeans' own FlatLaf window styling.
 
-## If something looks wrong
+If that hook ever stops working, the theme is switched after startup instead. That path is less reliable: tables created under the Windows look keep header renderers that throw on paint, so `ThemeApplier` finds and rebuilds them.
 
-- **Turn it off:** Tools → Options → Modern UI → uncheck "Use the modern look", then restart.
-- **Emergency switch:** start Autopsy with `-J-Dmodernui.disable=true`, or uninstall the plugin under Tools → Plugins → Installed.
-- **A toolbar or menu looks wrong:** Studio → Toolbars & menus → select it → **Reset this group**.
-- **Window layout:** Studio → Toolbars & menus → **Reset window layout**, or switch back to the Default workspace.
-- **Dark themes:** the experimental color fix catches most hard-coded panels. If one looks worse, uncheck the fix in Options.
-- **Logs:** `messages.log` (Help → Open Log Folder) has "Modern UI applied (at startup)" or a warning explaining what happened.
+Override order is palette, then the Options page, then Studio overrides.
 
-## Where settings are stored
+The Cyber-Sigilism controls extend FlatLaf's UI delegates, which live in `com.formdev.flatlaf.ui`. NetBeans doesn't export that package to other modules, so those classes (`sigil.flat`) are loaded by `sigil.FlatBridge`, a small class loader whose parent is FlatLaf's own. For the same reason `nbproject/project.properties` puts the FlatLaf jar on the compile classpath with `cp.extra`.
 
-- **Basic settings:** Autopsy's user preferences.
-- **Larger data:** `%APPDATA%\autopsy\config\ModernUI\` holds `theme-overrides.properties`, `navigator.txt`, `hidden-items.txt` and `order-snapshots.txt`.
-- **Workspace layouts:** `%APPDATA%\autopsy\config\Windows2Local-<name>\`.
+## Troubleshooting
 
-## Files
+- Turn it off: Tools > Options > Modern UI > uncheck "Use the modern look", restart.
+- Start Autopsy with `-J-Dmodernui.disable=true` to skip theming entirely.
+- Broken toolbar or menu: Studio > Toolbars & menus > Reset this group.
+- Broken window layout: Studio > Workspaces > Restore default layout.
+- Dark themes: the hard-coded-color fix is experimental. If a panel looks worse with it, turn it off in Options.
+- `messages.log` (Help > Open Log Folder) logs which path applied the theme, or why it didn't.
 
-| Package | Purpose |
+## Where settings live
+
+- Simple settings: Autopsy's user preferences.
+- `%APPDATA%\autopsy\config\ModernUI\`: theme overrides, navigator views, hidden items, original toolbar order.
+- `%APPDATA%\autopsy\config\Windows2Local-<name>\`: workspace layouts.
+
+## Source layout
+
+| Package | |
 |---|---|
-| `com.modernui.autopsy` | Startup (`Installer`), theme application (`ThemeApplier`), settings, dark-mode fixer, config store, `layer.xml` (navigator docking area, Workspace toolbar) |
-| `…theme` | Palettes, overrides, Theme Studio tab |
-| `…ui` | Toolbar/menu config editing (`UiConfig`), icon-only/size (`ToolbarCustomizer`), editor tab |
-| `…workspace` | Workspace manager, Studio tab, toolbar/menu switcher |
-| `…navigator` | Navigator window, layout model, case queries, result viewer bridge, editor tab |
-| `…studio` | Studio window, light/dark toggle, shared UI helpers |
-| `…options` | Tools → Options → Modern UI page |
+| `com.modernui.autopsy` | `Installer`, `ThemeApplier`, settings, dark color fixer, config files, `layer.xml` |
+| `.theme` | palettes, property overrides, Theme tab |
+| `.ui` | toolbar/menu editing, toolbar display, icons |
+| `.workspace` | workspaces, layout repair |
+| `.navigator` | Navigator panel, view model, queries, result viewer glue |
+| `.studio` | Studio window, Case Workspace, toolbar actions |
+| `.sigil` | Cyber-Sigilism: palette and settings access, ornament library, control delegates, framed panels, status-bar element, Studio tab, bundled fonts |
+| `.options` | Options page |
 
 ## Limits
 
-A plugin can't change the *inside* of Autopsy's own panels, such as the order of categories in Autopsy's tree or the content viewers' internals. The Navigator works around the first one by giving you your own tree. A fork of Autopsy would be needed for the rest.
+Cyber-Sigilism can't reach: the main window frame itself (only its title-bar colors), NetBeans' own panel tab strips (Autopsy hides them anyway), the content viewers' internals (hex, text, media and HTML viewers draw their own content), Autopsy's ingest progress dialogs beyond their progress bars and buttons, and node icons in Autopsy's tree, which Autopsy supplies per node. Group boxes created before the theme is installed (rare) keep a plain border until restart.
 
-## Version history
+This is a plugin, not a fork. It can restyle anything that goes through Swing/FlatLaf defaults and add its own panels, but it can't change how Autopsy's own result tables, content viewers or ingest panels lay out their contents. That would need changes to Autopsy itself.
 
-- **2.1:** one column. Autopsy's case tree (Data Sources, File Views, Analysis Results, Tags…) now lives at the top of the Navigator, with Back/Forward/⚙. Autopsy's own tree panel is tucked away. Toggle in Studio → Navigator.
-- **2.0.2:** automatically resets a window layout saved while 2.0 was installed (one time; backup kept in `config/ModernUI/layout-backup`). New "Lock toolbars" option, on by default, hides the ⋮ drag handles.
-- **2.0.1:** fixes the Navigator scrambling Autopsy's window layout (it now docks as its own column left of the tree) and fixes clipped Navigator labels and counts
-- **2.0:** Modern UI Studio: 12 palettes, any-property theme editor with import and export, toolbar and menu editor (hide, show, reorder, icon-only, icon size), workspaces, Studio Navigator with 34 starter views and custom SQL, light/dark toggle, keyboard shortcuts
-- **1.2:** theme chosen before any window exists. Fixes blank areas.
-- **1.1:** custom accent, font and size, grid lines, tab style, dark-mode color fix, reset
-- **1.0:** themes, accents, corners, row density, striped rows, modern title bar
+The bundled display fonts are under the SIL Open Font License; see `src/com/modernui/autopsy/sigil/fonts/OFL.txt`.
+
+The Rottweiler artwork is used for the window/taskbar icon and the Add Data Source button. Autopsy's splash screen comes from the launcher and can't be replaced from a module.
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.

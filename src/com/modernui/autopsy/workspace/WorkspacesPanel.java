@@ -52,6 +52,7 @@ public final class WorkspacesPanel extends JPanel {
         JPanel buttons = new JPanel(new GridLayout(0, 1, 0, 4));
         buttons.add(StudioUi.button("New workspace…", this::createNew));
         buttons.add(StudioUi.button("Switch to", this::switchSelected));
+        buttons.add(StudioUi.button("Restore default layout", this::restoreDefaultLayout));
         buttons.add(StudioUi.button("Delete", this::deleteSelected));
         JPanel holder = new JPanel(new BorderLayout());
         holder.add(buttons, BorderLayout.NORTH);
@@ -122,6 +123,23 @@ public final class WorkspacesPanel extends JPanel {
         if (answer == JOptionPane.OK_OPTION) {
             WorkspaceManager.delete(name);
         }
+    }
+
+    private void restoreDefaultLayout() {
+        int answer = JOptionPane.showConfirmDialog(this,
+                "Switch to the Default workspace and restore Autopsy's default panel arrangement?\n"
+                + "Custom workspaces will be kept.",
+                "Restore default layout", JOptionPane.OK_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+        if (answer != JOptionPane.OK_OPTION) {
+            return;
+        }
+        if (!WorkspaceManager.restoreDefaultLayout()) {
+            JOptionPane.showMessageDialog(this,
+                    "Autopsy's window-layout reset action is unavailable.",
+                    "Restore default layout", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        reload();
     }
 
     /** Marks the active workspace. */

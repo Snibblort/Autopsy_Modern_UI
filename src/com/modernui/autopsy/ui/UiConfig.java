@@ -165,7 +165,7 @@ public final class UiConfig {
             saveHidden(hidden);
             return true;
         } catch (IOException | RuntimeException ex) {
-            LOGGER.log(Level.WARNING, "Modern UI: could not hide " + path, ex);
+            LOGGER.log(Level.WARNING, "Could not hide " + path, ex);
             return false;
         }
     }
@@ -183,7 +183,7 @@ public final class UiConfig {
             refreshParent(item.path);
             return ok;
         } catch (IOException | RuntimeException ex) {
-            LOGGER.log(Level.WARNING, "Modern UI: could not show " + item.path, ex);
+            LOGGER.log(Level.WARNING, "Could not show " + item.path, ex);
             return false;
         }
     }
@@ -207,7 +207,7 @@ public final class UiConfig {
             FileUtil.setOrder(order);
             return true;
         } catch (IOException | RuntimeException ex) {
-            LOGGER.log(Level.WARNING, "Modern UI: could not reorder " + item.path, ex);
+            LOGGER.log(Level.WARNING, "Could not reorder " + item.path, ex);
             return false;
         }
     }
@@ -227,7 +227,7 @@ public final class UiConfig {
                 ok = true;
             }
         } catch (IOException | RuntimeException ex) {
-            LOGGER.log(Level.WARNING, "Modern UI: could not reset " + folderItem.path, ex);
+            LOGGER.log(Level.WARNING, "Could not reset " + folderItem.path, ex);
         }
         ok |= restoreOrder(folderItem.file);
         Map<String, String> hidden = hiddenItems();

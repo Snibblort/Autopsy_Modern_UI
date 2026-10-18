@@ -33,7 +33,7 @@ public final class ConfigStore {
             FileObject file = folder == null ? null : folder.getFileObject(name);
             return file == null ? fallback : file.asText(StandardCharsets.UTF_8.name());
         } catch (IOException ex) {
-            LOGGER.log(Level.WARNING, "Modern UI: could not read " + name, ex);
+            LOGGER.log(Level.WARNING, "Could not read " + name, ex);
             return fallback;
         }
     }
@@ -55,7 +55,7 @@ public final class ConfigStore {
             write(name, text);
             return true;
         } catch (IOException ex) {
-            LOGGER.log(Level.WARNING, "Modern UI: could not save " + name, ex);
+            LOGGER.log(Level.WARNING, "Could not save " + name, ex);
             return false;
         }
     }

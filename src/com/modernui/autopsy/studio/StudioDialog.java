@@ -20,15 +20,13 @@ import org.openide.awt.ActionReferences;
 import org.openide.awt.ActionRegistration;
 import org.openide.windows.WindowManager;
 
-/**
- * Modern UI Studio: one non-modal window with a tab for each part of
- * Autopsy you can customize. Non-modal so changes can be watched live.
- */
+/** The Studio window. Non-modal so you can watch changes apply. */
 public final class StudioDialog {
 
     /** Studio tabs, in display order. */
     public enum Tab {
         THEME("Theme"),
+        SIGIL("Cyber-Sigilism"),
         TOOLBARS("Toolbars & menus"),
         WORKSPACES("Workspaces"),
         NAVIGATOR("Navigator");
@@ -67,6 +65,7 @@ public final class StudioDialog {
         tabs = new JTabbedPane();
         tabs.putClientProperty("JTabbedPane.tabType", "card");
         tabs.addTab(Tab.THEME.title, new ThemeStudioPanel());
+        tabs.addTab(Tab.SIGIL.title, new com.modernui.autopsy.sigil.SigilStudioPanel());
         tabs.addTab(Tab.TOOLBARS.title, new MenuToolbarEditorPanel());
         tabs.addTab(Tab.WORKSPACES.title, new WorkspacesPanel());
         tabs.addTab(Tab.NAVIGATOR.title, new NavigatorEditorPanel());
@@ -79,7 +78,7 @@ public final class StudioDialog {
         dialog.setLocationRelativeTo(owner);
     }
 
-    /** Tools ▸ Modern UI Studio… (also in the View menu). */
+    /** Tools > Modern UI Studio… (also under View). */
     @ActionID(category = "Tools", id = "com.modernui.autopsy.studio.OpenStudio")
     @ActionRegistration(displayName = "Modern UI Studio…", iconBase = "com/modernui/autopsy/options/modernui_studio.png")
     @ActionReferences({

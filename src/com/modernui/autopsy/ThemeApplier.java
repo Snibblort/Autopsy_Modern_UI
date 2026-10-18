@@ -24,19 +24,14 @@ import javax.swing.table.TableCellRenderer;
 import org.openide.util.Lookup;
 
 /**
- * Puts Autopsy into FlatLaf using the saved Modern UI settings.
+ * Applies the saved theme.
  *
- * <p><b>Normal path (startup).</b> NetBeans picks its look and feel once,
- * early in startup, from the {@code --laf} option. That happens after every
- * module's {@code ModuleInstall.validate()} and before any window exists. From
- * {@code validate()} this module fills in the same value {@code --laf} would
- * set, so NetBeans starts directly in FlatLaf and installs its own FlatLaf
- * window-system styling (from org.netbeans.swing.laf.flatlaf).
- *
- * <p><b>Fallback (after startup).</b> If that hook isn't available, the theme
- * is switched once the UI is up. Switching late can leave tables with header
- * renderers from the old Windows look, which throw while painting and leave
- * parts of the window blank, so those headers are rebuilt.
+ * NetBeans reads its look and feel from --laf once, after every module's
+ * validate() and before any window exists. We set that same value from
+ * validate(), so NetBeans starts in FlatLaf and uses its own FlatLaf window
+ * styling. If the hook is missing we switch after startup instead; that path
+ * has to rebuild table headers that still carry Windows L&F renderers, since
+ * those throw on paint and blank out the window.
  */
 public final class ThemeApplier {
 
@@ -75,7 +70,7 @@ public final class ThemeApplier {
             FlatLaf.setGlobalExtraDefaults(buildExtraDefaults(settings));
             Class<?> cliOptions = findClass(CLI_OPTIONS_CLASS);
             if (cliOptions == null) {
-                LOGGER.info("Modern UI: startup hook not found; will switch the theme after startup.");
+                LOGGER.info("Startup hook not found; will switch the theme after startup.");
                 return false;
             }
             Field uiClass = cliOptions.getDeclaredField("uiClass");
@@ -83,14 +78,14 @@ public final class ThemeApplier {
             uiClass.setAccessible(true);
             uiClassName.setAccessible(true);
             if (uiClass.get(null) != null) {
-                LOGGER.info("Modern UI: a look and feel was set with --laf; leaving it alone.");
+                LOGGER.info("A look and feel was set with --laf; leaving it alone.");
                 return false;
             }
             uiClassName.set(null, settings.getEffectiveTheme().lookAndFeelClassName());
-            LOGGER.log(Level.INFO, "Modern UI: NetBeans will start with {0}", settings.getEffectiveTheme().lookAndFeelClassName());
+            LOGGER.log(Level.INFO, "NetBeans will start with {0}", settings.getEffectiveTheme().lookAndFeelClassName());
             return true;
         } catch (Exception | LinkageError ex) {
-            LOGGER.log(Level.INFO, "Modern UI: startup hook failed; will switch the theme after startup.", ex);
+            LOGGER.log(Level.INFO, "Startup hook failed; will switch the theme after startup.", ex);
             return false;
         }
     }
@@ -158,7 +153,7 @@ public final class ThemeApplier {
             try {
                 DarkColorFixer.install();
             } catch (RuntimeException ex) {
-                LOGGER.log(Level.WARNING, "Modern UI: dark color fixer could not start.", ex);
+                LOGGER.log(Level.WARNING, "Dark color fixer could not start.", ex);
             }
         }
     }
@@ -247,6 +242,9 @@ public final class ThemeApplier {
         }
 
         extra.put("ScrollPane.smoothScrolling", "true");
+        if (settings.getPalette() == com.modernui.autopsy.theme.PalettePreset.GOTHIC_SIGILISM) {
+            extra.putAll(com.modernui.autopsy.sigil.Sigil.extraDefaults(settings));
+        }
         if (overrides != null) {
             extra.putAll(overrides);
         }
@@ -289,6 +287,7 @@ public final class ThemeApplier {
     public static void applyLive() {
         ModernUISettings settings = ModernUISettings.getInstance();
         try {
+            com.modernui.autopsy.sigil.SigilControls.listen();
             FlatLaf.setGlobalExtraDefaults(buildExtraDefaults(settings));
             UIManager.setLookAndFeel(settings.getEffectiveTheme().create());
             restoreAutopsyCustomizations();
@@ -297,9 +296,10 @@ public final class ThemeApplier {
                 DarkColorFixer.install();
             }
             com.modernui.autopsy.ui.ToolbarCustomizer.apply();
-            LOGGER.info("Modern UI: settings applied live.");
+            com.modernui.autopsy.sigil.SigilClock.update();
+            LOGGER.info("Settings applied live.");
         } catch (Exception | LinkageError ex) {
-            LOGGER.log(Level.WARNING, "Modern UI: live apply failed; restart Autopsy to apply.", ex);
+            LOGGER.log(Level.WARNING, "Live apply failed; restart Autopsy to apply.", ex);
             throw new IllegalStateException("Could not apply the theme live: " + ex.getMessage(), ex);
         }
     }
@@ -323,7 +323,7 @@ public final class ThemeApplier {
             rebuilt += repairTableHeaders(window);
         }
         if (rebuilt > 0) {
-            LOGGER.log(Level.INFO, "Modern UI: rebuilt {0} table header(s) left over from the old theme.", rebuilt);
+            LOGGER.log(Level.INFO, "Rebuilt {0} table header(s) left over from the old theme.", rebuilt);
         }
     }
 

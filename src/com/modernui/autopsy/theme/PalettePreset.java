@@ -22,7 +22,20 @@ public enum PalettePreset {
     MONOKAI("Monokai Pro", Theme.DARK, "#2D2A2E", "#FCFCFA", "#363337", "#221F22", "#403E41", "#FFD866"),
     GITHUB_DARK("GitHub Dark", Theme.DARK, "#0D1117", "#C9D1D9", "#161B22", "#010409", "#21262D", "#58A6FF"),
     MATERIAL_OCEAN("Material Ocean", Theme.DARK, "#0F111A", "#A6ACCD", "#1A1C25", "#090B10", "#1F2233", "#80CBC4"),
+    PROFESSIONAL_FORENSICS("Professional Forensics", Theme.DARK, "#151C25", "#DCE5EF", "#1C2632", "#111821", "#263342", "#4BA3D9",
+            "@selectionBackground", "#29445C", "@selectionForeground", "#F4F8FC",
+            "Component.borderColor", "#354352", "Component.focusColor", "@accentColor",
+            "Separator.foreground", "#303C49", "TabbedPane.underlineColor", "@accentColor",
+            "TabbedPane.selectedBackground", "#202D3A", "ToolBar.background", "#171F29",
+            "Table.gridColor", "#2A3642", "Tree.selectionBackground", "@selectionBackground",
+            "Button.hoverBackground", "#314354", "ScrollBar.thumb", "#45596D", "ScrollBar.track", "#19222D",
+            "Component.arc", "6", "Button.arc", "5", "ScrollBar.thumbArc", "4",
+            "TableHeader.background", "#202D3A", "TableHeader.separatorColor", "#4BA3D9",
+            "ToolTip.background", "#202D3A"),
     FORENSIC_NAVY("Forensic Navy", Theme.DARK, "#101826", "#D6E2F0", "#172234", "#0C1320", "#1E2B40", "#3DA5FF"),
+    // Most Cyber-Sigilism styling comes from sigil.Sigil.extraDefaults(); these are the base colors.
+    GOTHIC_SIGILISM("Cyber-Sigilism", Theme.DARK, "#0B0A10", "#F0EDF6", "#111019", "#07070A", "#191522", "#A855F7",
+            "TabbedPane.tabType", "underlined", "Table.showVerticalLines", "false"),
     SOLARIZED_LIGHT("Solarized Light", Theme.LIGHT, "#FDF6E3", "#586E75", "#EEE8D5", "#F5EFDC", "#EEE8D5", "#268BD2"),
     GITHUB_LIGHT("GitHub Light", Theme.LIGHT, "#F6F8FA", "#24292F", "#FFFFFF", "#FFFFFF", "#F6F8FA", "#0969DA");
 
@@ -31,7 +44,7 @@ public enum PalettePreset {
     private final Map<String, String> values;
 
     PalettePreset(String displayName, Theme base, String background, String foreground,
-            String component, String menu, String button, String accent) {
+            String component, String menu, String button, String accent, String... extraValues) {
         this.displayName = displayName;
         this.base = base;
         Map<String, String> map = new LinkedHashMap<>();
@@ -42,11 +55,35 @@ public enum PalettePreset {
             map.put("@menuBackground", menu);
             map.put("@buttonBackground", button);
             map.put("@accentColor", accent);
-            // Keep trees, tables and text areas on the palette's surfaces.
+            map.put("@selectionBackground", accent);
+            map.put("@selectionForeground", "#FFFFFF");
             map.put("Tree.background", "@background");
             map.put("Table.background", "@componentBackground");
+            map.put("List.background", "@componentBackground");
             map.put("TextArea.background", "@componentBackground");
             map.put("TitlePane.background", "@menuBackground");
+            map.put("TableHeader.background", "@menuBackground");
+            map.put("TableHeader.foreground", "@foreground");
+            map.put("TableHeader.separatorColor", "@accentColor");
+            map.put("Table.selectionBackground", "@selectionBackground");
+            map.put("Table.selectionForeground", "@selectionForeground");
+            map.put("Tree.selectionBackground", "@selectionBackground");
+            map.put("Tree.selectionForeground", "@selectionForeground");
+            map.put("List.selectionBackground", "@selectionBackground");
+            map.put("List.selectionForeground", "@selectionForeground");
+            map.put("MenuBar.background", "@menuBackground");
+            map.put("PopupMenu.background", "@menuBackground");
+            map.put("Menu.selectionBackground", "@buttonBackground");
+            map.put("MenuItem.selectionBackground", "@buttonBackground");
+            map.put("ToolTip.background", "@menuBackground");
+            map.put("ToolTip.foreground", "@foreground");
+            map.put("ProgressBar.foreground", "@accentColor");
+            if (extraValues.length % 2 != 0) {
+                throw new IllegalArgumentException("Palette overrides must be key/value pairs");
+            }
+            for (int i = 0; i < extraValues.length; i += 2) {
+                map.put(extraValues[i], extraValues[i + 1]);
+            }
         }
         this.values = Collections.unmodifiableMap(map);
     }

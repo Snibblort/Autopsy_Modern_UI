@@ -1,39 +1,9 @@
-# Build output
+# NetBeans
 build/
-
-# NetBeans private settings
+dist/
 nbproject/private/
 
-# Java
-*.class
-
-# Logs
-*.log
-
-# OS files
+# OS
 Thumbs.db
 Desktop.ini
 .DS_Store
-
-# IntelliJ
-.idea/
-*.iml
-
-# VS Code
-.vscode/
-
-# Maven
-target/
-
-# Gradle
-.gradle/
-
-# NetBeans build artifacts
-nbbuild/
-nbdist/
-dist/
-
-# Temp files
-*.tmp
-*.bak
-``
