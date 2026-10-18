@@ -30,6 +30,7 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
+import javax.swing.JTabbedPane;
 import javax.swing.JTree;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
@@ -64,8 +65,9 @@ import org.sleuthkit.autopsy.ingest.IngestManager;
 @TopComponent.OpenActionRegistration(displayName = "Studio Navigator", preferredID = NavigatorTopComponent.ID)
 public final class NavigatorTopComponent extends TopComponent {
 
-    static final String ID = "ModernUINavigatorTopComponent";
+    public static final String ID = "ModernUINavigatorTopComponent";
 
+    private static final String DOCK_MODE = "modernuiNavigator";
     private static final Logger LOGGER = Logger.getLogger(NavigatorTopComponent.class.getName());
     private static final RequestProcessor RP = new RequestProcessor("Modern UI navigator", 1, true);
     private static final String CARD_TREE = "tree";
@@ -78,7 +80,9 @@ public final class NavigatorTopComponent extends TopComponent {
     private final JLabel caseLabel = new JLabel(" ");
     private final JLabel emptyLabel = new JLabel("Open a case to use the navigator.", SwingConstants.CENTER);
     private final JPanel viewsPanel = new JPanel(new BorderLayout());
-    private final javax.swing.JSplitPane split = new javax.swing.JSplitPane(javax.swing.JSplitPane.VERTICAL_SPLIT);
+    private final JPanel caseTreeTab = new JPanel(new BorderLayout());
+    private final JPanel savedViewsTab = new JPanel(new BorderLayout());
+    private final JTabbedPane sections = new JTabbedPane();
     private AutopsyTreeSection caseTree;
     private final CardLayout cards = new CardLayout();
     private final JPanel body = new JPanel(cards);
@@ -197,14 +201,16 @@ public final class NavigatorTopComponent extends TopComponent {
         viewsPanel.add(viewsHeader, BorderLayout.NORTH);
         viewsPanel.add(body, BorderLayout.CENTER);
 
-        split.setBorder(BorderFactory.createEmptyBorder());
-        split.setResizeWeight(0.5);
-        split.setContinuousLayout(true);
-        split.setDividerSize(6);
-        split.setBottomComponent(viewsPanel);
+        caseTreeTab.setOpaque(false);
+        savedViewsTab.setOpaque(false);
+        savedViewsTab.add(viewsPanel, BorderLayout.CENTER);
+        sections.putClientProperty("JTabbedPane.tabType", "underlined");
+        sections.setBorder(BorderFactory.createEmptyBorder());
+        sections.addTab("Case tree", caseTreeTab);
+        sections.addTab("Saved views", savedViewsTab);
 
         add(header, BorderLayout.NORTH);
-        add(viewsPanel, BorderLayout.CENTER);
+        add(sections, BorderLayout.CENTER);
         rebuildTree();
     }
 
@@ -216,14 +222,66 @@ public final class NavigatorTopComponent extends TopComponent {
         }
     }
 
+    /** Opens one of the saved Navigator searches from another Modern UI surface. */
+    public static boolean openSavedView(String groupName, String viewName) {
+        NavigatorTopComponent navigator = findNavigator();
+        if (navigator == null) {
+            return false;
+        }
+        for (Group group : NavigatorConfig.load().groups) {
+            if (!group.name.equals(groupName)) {
+                continue;
+            }
+            for (View view : group.views) {
+                if (view.name.equals(viewName)) {
+                    navigator.dockToNavigatorMode();
+                    navigator.open();
+                    navigator.requestActive();
+                    if (ModernUISettings.getInstance().isMergeAutopsyTree()) {
+                        navigator.sections.setSelectedComponent(navigator.savedViewsTab);
+                    }
+                    navigator.openView(group.name, view, false);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** Opens the Navigator in its joined side column rather than a sliding overlay. */
+    public static boolean openNavigator() {
+        NavigatorTopComponent navigator = findNavigator();
+        if (navigator == null) {
+            return false;
+        }
+        navigator.dockToNavigatorMode();
+        navigator.open();
+        navigator.requestActive();
+        return true;
+    }
+
+    private static NavigatorTopComponent findNavigator() {
+        TopComponent tc = WindowManager.getDefault().findTopComponent(ID);
+        return tc instanceof NavigatorTopComponent ? (NavigatorTopComponent) tc : null;
+    }
+
+    private void dockToNavigatorMode() {
+        Mode target = WindowManager.getDefault().findMode(DOCK_MODE);
+        if (target == null) {
+            LOGGER.warning("Modern UI: the joined Navigator docking mode is unavailable");
+            return;
+        }
+        if (WindowManager.getDefault().findMode(this) != target) {
+            target.dockInto(this);
+        }
+    }
+
     /**
-     * One column: Autopsy's case tree on top, your views below, and Autopsy's
-     * own tree panel tucked away. Otherwise just your views.
+     * One column: switch between Autopsy's case tree and your saved views.
+     * Otherwise show only saved views and leave Autopsy's tree in its own panel.
      */
     void applyMerge() {
         boolean merge = ModernUISettings.getInstance().isMergeAutopsyTree();
-        remove(viewsPanel);
-        remove(split);
         if (merge) {
             if (caseTree == null) {
                 try {
@@ -233,15 +291,20 @@ public final class NavigatorTopComponent extends TopComponent {
                 }
             }
         }
-        if (merge && caseTree != null) {
-            split.setTopComponent(caseTree);
-            split.setBottomComponent(viewsPanel);
-            add(split, BorderLayout.CENTER);
-            if (split.getDividerLocation() <= 0) {
-                SwingUtilities.invokeLater(() -> split.setDividerLocation(0.5));
+        boolean showCaseTree = merge && caseTree != null;
+        int caseTreeIndex = sections.indexOfComponent(caseTreeTab);
+        if (showCaseTree) {
+            caseTreeTab.removeAll();
+            caseTreeTab.add(caseTree, BorderLayout.CENTER);
+            if (caseTreeIndex < 0) {
+                sections.insertTab("Case tree", null, caseTreeTab, null, 0);
             }
+            sections.setSelectedComponent(caseTreeTab);
         } else {
-            add(viewsPanel, BorderLayout.CENTER);
+            if (caseTreeIndex >= 0) {
+                sections.removeTabAt(caseTreeIndex);
+            }
+            sections.setSelectedComponent(savedViewsTab);
         }
         revalidate();
         repaint();
@@ -258,7 +321,7 @@ public final class NavigatorTopComponent extends TopComponent {
 
     private JPopupMenu dockMenu() {
         JPopupMenu menu = new JPopupMenu();
-        addDock(menu, "Left side (own area)", "modernuiNavigator");
+        addDock(menu, "Left side (own area)", DOCK_MODE);
         addDock(menu, "Right side", "properties", "commonpalette");
         addDock(menu, "Bottom", "output");
         addDock(menu, "Floating window", "floatingLeftBottom");
@@ -286,6 +349,7 @@ public final class NavigatorTopComponent extends TopComponent {
 
     @Override
     protected void componentOpened() {
+        dockToNavigatorMode();
         Case.addEventTypeSubscriber(CASE_EVENTS, caseListener);
         IngestManager.getInstance().addIngestJobEventListener(INGEST_EVENTS, ingestListener);
         NavigatorConfig.addChangeListener(configListener);

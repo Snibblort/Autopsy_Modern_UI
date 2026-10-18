@@ -10,7 +10,12 @@ A NetBeans plugin that modernizes Autopsy and lets you customize nearly everythi
 | **Modern UI Studio** (everything below) | **Tools → Modern UI Studio…**, **View → Modern UI Studio…**, or **Ctrl+Shift+U** |
 | Light/dark toggle | **View → Toggle Light/Dark Theme**, the Workspace toolbar, or **Ctrl+Shift+L** |
 | Workspace switcher | the **Workspace** toolbar, or **Window → Workspaces** |
+| Case Workspace | opens in the main work area at startup, or **Window → Case Workspace** |
 | Studio Navigator | opens on the left; reopen with **Window → Studio Navigator** |
+
+## Case Workspace
+
+The Case Workspace is a task-oriented starting page in the main work area. It groups common searches into **Triage**, **Find files**, **User activity**, and **Review**. Each shortcut opens the corresponding saved Navigator search in Autopsy's native result viewer; the original Table, Thumbnail, Summary, and other result tabs remain available. Use **Open Navigator** to browse all saved views, or **Customize** to change them.
 
 ## Modern UI Studio
 
@@ -33,9 +38,11 @@ Under the hood this edits the same configuration folders Autopsy's toolbars and 
 Named window layouts, such as *Triage*, *Deep Dive* or *Reporting*. Switch to a workspace, then drag, resize, open or close panels, and the layout is saved automatically. These are built on NetBeans window "roles", and each one is stored in `config/Windows2Local-<name>`.
 
 ### Navigator
-**One column:** the top of the Navigator is Autopsy's own case tree (Data Sources, File Views, Data Artifacts, Analysis Results, OS Accounts, Tags, Score, Reports) with its Back, Forward and ⚙ buttons, and **My views** sits below it. It is the same tree, not a copy, so clicking a node updates the results exactly as before, and Autopsy's "go to" actions select nodes there. Autopsy's separate tree panel is tucked behind the Navigator: it can't be closed, and it has to stay open for Autopsy's features to work. Turn this off in Studio → Navigator to get Autopsy's tree column back.
+**One column:** the Navigator has separate **Case tree** and **Saved views** tabs, so either navigation tree can use the full panel height. The case tree is Autopsy's own tree (Data Sources, File Views, Data Artifacts, Analysis Results, OS Accounts, Tags, Score, Reports) with its Back, Forward and ⚙ buttons. It is the same tree, not a copy, so clicking a node updates the results exactly as before, and Autopsy's "go to" actions select nodes there. Autopsy's separate tree panel is tucked behind the Navigator: it can't be closed, and it has to stay open for Autopsy's features to work. Turn this off in Studio → Navigator to get Autopsy's tree column back.
 
 Your own way of organizing a case, alongside Autopsy's tree. **Groups** hold **views**, and each view is a saved search with a live count. Clicking a view opens its results in **Autopsy's own result viewer**, so tables, thumbnails, content viewers, tagging and right-click actions all work normally. Ctrl+click opens a view in a new tab.
+
+Navigator results also include a Modern UI **Overview** tab, added through Autopsy's result-viewer extension point. The built-in Table and Thumbnail tabs remain available, so this is a low-risk way to experiment with replacing parts of a core screen without changing Autopsy itself.
 
 | View type | Parameter |
 |---|---|
@@ -67,7 +74,7 @@ Your own way of organizing a case, alongside Autopsy's tree. **Groups** hold **v
 1. In NetBeans, go to **Tools → NetBeans Platforms**. A platform named exactly `Autopsy_4.22.1` must point at `C:\Program Files\Autopsy-4.22.1`.
 2. **File → Open Project** → this folder.
 3. Right-click the project → **Clean and Build**, then **Create NBM**. The plugin is written to `build\com-modernui-autopsy.nbm`.
-4. In Autopsy: **Tools → Plugins → Downloaded → Add Plugins…**, then install. It is version 2.0, so it replaces 1.x.
+4. In Autopsy: **Tools → Plugins → Downloaded → Add Plugins…**, then install. This update is version 2.8.
 5. **Fully close and reopen Autopsy** after installing.
 
 ## If something looks wrong
@@ -103,6 +110,13 @@ A plugin can't change the *inside* of Autopsy's own panels, such as the order of
 
 ## Version history
 
+- **2.5:** fixes Navigator's Saved views tab being detached from its tabbed container
+- **2.6:** moves the Navigator out of saved sliding-overlay modes and into a resizing side column whenever it opens
+- **2.7:** keeps the Saved views tab inside its tabbed pane so it remains available alongside Case tree
+- **2.8:** adds compact FlatLaf toolbar buttons with a subtle animated hover transition
+- **2.4:** opens a task-oriented Case Workspace in the main work area, with direct shortcuts to common saved searches; native result tabs remain available
+- **2.3:** organizes the merged Navigator into full-height Case tree and Saved views tabs instead of squeezing both into a vertical split
+- **2.2:** experimental Modern UI Overview tab for results opened from Navigator views; built-in result tabs remain available
 - **2.1:** one column. Autopsy's case tree (Data Sources, File Views, Analysis Results, Tags…) now lives at the top of the Navigator, with Back/Forward/⚙. Autopsy's own tree panel is tucked away. Toggle in Studio → Navigator.
 - **2.0.2:** automatically resets a window layout saved while 2.0 was installed (one time; backup kept in `config/ModernUI/layout-backup`). New "Lock toolbars" option, on by default, hides the ⋮ drag handles.
 - **2.0.1:** fixes the Navigator scrambling Autopsy's window layout (it now docks as its own column left of the tree) and fixes clipped Navigator labels and counts

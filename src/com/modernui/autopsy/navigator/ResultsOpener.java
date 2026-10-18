@@ -5,6 +5,7 @@ import java.util.List;
 import org.openide.nodes.AbstractNode;
 import org.openide.nodes.Children;
 import org.openide.nodes.Node;
+import org.openide.util.lookup.Lookups;
 import org.sleuthkit.autopsy.corecomponents.DataResultTopComponent;
 import org.sleuthkit.autopsy.corecomponents.TableFilterNode;
 import org.sleuthkit.autopsy.datamodel.BlackboardArtifactNode;
@@ -28,7 +29,8 @@ final class ResultsOpener {
 
     /** Opens (or replaces) the navigator results tab. Call on the Swing thread. */
     static void open(String groupName, String viewName, List<Object> items, boolean truncated, boolean newTab) {
-        AbstractNode root = new AbstractNode(new ItemChildren(items));
+        AbstractNode root = new AbstractNode(new ItemChildren(items),
+                Lookups.singleton(new NavigatorResultInfo(groupName, viewName, items.size(), truncated)));
         root.setName(viewName);
         root.setDisplayName(viewName);
 
