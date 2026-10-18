@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mode PUBLIC
+          "-//NetBeans//DTD Mode Properties 2.0//EN"
+          "http://www.netbeans.org/dtds/mode-properties2_0.dtd">
+<!--
+    Autopsy's main window is split side by side first: the tree ("explorer",
+    horizontal 20) and then the results/content column (horizontal 60). This
+    mode joins that same side-by-side split as its own column to the left of
+    the tree (horizontal 10). It must not start with a vertical path, or
+    NetBeans restructures the whole window around it.
+-->
+<mode version="2.3">
+    <name unique="modernuiNavigator"/>
+    <kind type="view"/>
+    <state type="joined"/>
+    <constraints>
+        <path orientation="horizontal" number="10" weight="0.18"/>
+    </constraints>
+    <bounds x="0" y="0" width="0" height="0"/>
+    <frame state="0"/>
+    <empty-behavior permanent="false"/>
+</mode>

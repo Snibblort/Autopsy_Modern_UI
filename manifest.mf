@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+AutoUpdate-Show-In-Client: true
+OpenIDE-Module: com.modernui.autopsy
+OpenIDE-Module-Install: com/modernui/autopsy/Installer.class
+OpenIDE-Module-Layer: com/modernui/autopsy/layer.xml
+OpenIDE-Module-Localizing-Bundle: com/modernui/autopsy/Bundle.properties
+OpenIDE-Module-Specification-Version: 2.1

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE filesystem PUBLIC "-//NetBeans//DTD Filesystem 1.2//EN" "http://www.netbeans.org/dtds/filesystem-1_2.dtd">
+<!--
+    Modern UI layer: a docking area for the Studio Navigator (left of Autopsy's
+    tree) and a display name for the Workspace toolbar.
+-->
+<filesystem>
+    <folder name="Windows2">
+        <folder name="Modes">
+            <file name="modernuiNavigator.wsmode" url="modernuiNavigatorWsmode.xml"/>
+            <folder name="modernuiNavigator"/>
+        </folder>
+    </folder>
+    <folder name="Toolbars">
+        <folder name="Workspace">
+            <attr name="displayName" stringvalue="Workspace"/>
+        </folder>
+    </folder>
+</filesystem>
